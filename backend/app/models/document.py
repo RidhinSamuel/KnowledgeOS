@@ -2,7 +2,7 @@
 from datetime import datetime
 from enum import Enum
 from typing import Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 
 class DocumentStatus(str, Enum):
     PENDING = "PENDING"
@@ -11,6 +11,7 @@ class DocumentStatus(str, Enum):
     FAILED = "FAILED"
 
 class DocumentResponse(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
     id: str = Field(..., alias="_id")
     workspace_id: str
     filename: str
@@ -21,9 +22,3 @@ class DocumentResponse(BaseModel):
     error_message: Optional[str] = None
     created_at: datetime
     updated_at: datetime
-
-    class Config:
-        populate_by_name = True
-        json_encoders = {
-            datetime: lambda dt: dt.isoformat()
-        }

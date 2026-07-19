@@ -3,7 +3,6 @@ from datetime import datetime, timedelta, timezone
 from typing import Optional, List
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
-from jose import jwt, JWTError # Note: we imported pyjwt in requirements, pyjwt uses jwt namespace. PyJWT is safer and more modern.
 import jwt as pyjwt
 from passlib.context import CryptContext
 from app.core.config import settings

@@ -2,7 +2,11 @@
 from datetime import datetime
 from enum import Enum
 from typing import Optional
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, ConfigDict
+from pydantic.functional_serializers import PlainSerializer
+from typing import Annotated
+
+DateTimeStr = Annotated[datetime, PlainSerializer(lambda dt: dt.isoformat(), return_type=str)]
 
 class UserRole(str, Enum):
     OWNER = "Owner"
@@ -20,17 +24,12 @@ class UserLogin(BaseModel):
     password: str
 
 class UserResponse(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
     id: str = Field(..., alias="_id")
     email: EmailStr
     full_name: str
     role: UserRole
     created_at: datetime
-
-    class Config:
-        populate_by_name = True
-        json_encoders = {
-            datetime: lambda dt: dt.isoformat()
-        }
 
 class Token(BaseModel):
     access_token: str

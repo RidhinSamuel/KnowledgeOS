@@ -122,7 +122,8 @@ async def process_task(task_id: str, fields: dict):
             workspace_id=workspace_id,
             document_id=doc_id,
             filename=filename,
-            qdrant_client=qdrant_client
+            qdrant_client=qdrant_client,
+            db=db
         )
 
         # 7. Update document state to COMPLETED

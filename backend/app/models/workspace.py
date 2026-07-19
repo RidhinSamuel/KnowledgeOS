@@ -1,7 +1,7 @@
 # backend/app/models/workspace.py
 from datetime import datetime
 from typing import List, Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 
 class WorkspaceMember(BaseModel):
     user_id: str
@@ -12,15 +12,10 @@ class WorkspaceCreate(BaseModel):
     description: Optional[str] = None
 
 class WorkspaceResponse(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
     id: str = Field(..., alias="_id")
     name: str
     description: Optional[str] = None
     owner_id: str
     members: List[WorkspaceMember] = []
     created_at: datetime
-
-    class Config:
-        populate_by_name = True
-        json_encoders = {
-            datetime: lambda dt: dt.isoformat()
-        }

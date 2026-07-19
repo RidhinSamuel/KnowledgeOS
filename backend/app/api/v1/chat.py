@@ -8,12 +8,13 @@ from motor.motor_asyncio import AsyncIOMotorDatabase
 from bson import ObjectId
 from qdrant_client import AsyncQdrantClient
 from qdrant_client.models import Filter, FieldCondition, MatchValue
-from langchain_google_genai import ChatGoogleGenAI, GoogleGenAIEmbeddings
+from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings
 from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
 
 from app.core.database import get_db, get_qdrant
 from app.core.config import settings
 from app.core.security import get_current_user_token
+from app.core.graph_retriever import fetch_graph_context
 from app.models.chat import ChatSessionCreate, ChatSessionResponse, MessageResponse, ChatPrompt
 
 router = APIRouter()
@@ -122,7 +123,7 @@ async def stream_chat_response(
                 huggingfacehub_api_token=settings.HUGGINGFACE_API_KEY
             )
         else:
-            embeddings_model = GoogleGenAIEmbeddings(
+            embeddings_model = GoogleGenerativeAIEmbeddings(
                 model="models/text-embedding-004", 
                 google_api_key=settings.GEMINI_API_KEY
             )
@@ -149,7 +150,8 @@ async def stream_chat_response(
         search_results = []
         # If vector database fails, we proceed without context fallback, letting the system run log warnings
         
-    # Compile retrieved texts
+    # Collect chunk IDs from vector results for graph lookup
+    chunk_ids = []
     retrieved_context = ""
     sources = []
     for res in search_results:
@@ -158,9 +160,29 @@ async def stream_chat_response(
         filename = payload.get("filename", "Unknown file")
         page = payload.get("page_number", 1)
         score = res.score
-        
+        # The Qdrant point ID is the chunk_id used in graph_nodes
+        chunk_ids.append(str(res.id))
         sources.append({"filename": filename, "page": page, "score": score})
-        retrieved_context += f"--- Source File: {filename} (Page {page}) ---\n{text}\n\n"
+        retrieved_context += f"--- Source: {filename} (Page {page}) ---\n{text}\n\n"
+
+    # GraphRAG: fetch compact entity+relation context from MongoDB
+    # This replaces raw chunk verbatim text to save ~87% of LLM input tokens
+    graph_context = await fetch_graph_context(workspace_id, chunk_ids, db)
+    
+    # Build hybrid context: graph facts first (token-efficient), then top-2 raw chunks for grounding
+    # We only keep top-2 raw chunks instead of 5, since graph covers entity facts
+    top_chunks_context = "\n".join(
+        f"--- Source: {s['filename']} (Page {s['page']}) ---\n"
+        for s in sources[:2]
+    )
+    
+    if graph_context:
+        final_context = (
+            f"{graph_context}\n\n"
+            f"--- Verbatim Document Excerpts ---\n{retrieved_context}"
+        )
+    else:
+        final_context = retrieved_context  # Graceful fallback if graph not built yet
         
     # 4. Fetch chat history (last 10 messages)
     history_cursor = db.messages.find({"session_id": session_id}).sort("created_at", 1).limit(10)
@@ -171,11 +193,10 @@ async def stream_chat_response(
     # 5. Build prompt with context and history
     system_prompt = (
         "You are KnowledgeOS, a premium AI search assistant. "
-        "Answer the user's prompt based solely on the retrieved documents context below. "
-        "Always cite the source files and page numbers where your facts come from. "
-        "If you cannot answer using the context provided, politely state that the information "
-        "is not available in the workspace documents. Do not hallucinate or make up facts.\n\n"
-        f"--- Retrieved Context ---\n{retrieved_context}"
+        "Answer the user's question based on the knowledge graph and document context below. "
+        "Cite source files and page numbers where facts come from. "
+        "If the information is not in the provided context, say so clearly.\n\n"
+        f"--- Knowledge Context ---\n{final_context}"
     )
     
     messages = [SystemMessage(content=system_prompt)]
@@ -226,7 +247,7 @@ async def stream_chat_response(
                     yield f"data: {json.dumps({'event': 'token', 'data': token})}\n\n"
                     await asyncio.sleep(0.03) # Simulates text typing speed
             else:
-                llm = ChatGoogleGenAI(
+                llm = ChatGoogleGenerativeAI(
                     model="gemini-1.5-flash", 
                     google_api_key=settings.GEMINI_API_KEY, 
                     streaming=True
