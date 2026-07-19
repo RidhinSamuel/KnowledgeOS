@@ -45,10 +45,18 @@ services:
       - MONGODB_URL=mongodb://mongodb:27017
       - REDIS_URL=redis://valkey:6379
       - QDRANT_URL=http://qdrant:6333
+    ports:
+      - "127.0.0.1:8000:8000"
     depends_on:
       - mongodb
       - valkey
       - qdrant
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:8000/healthz"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     networks:
       - knowledge-net
 
