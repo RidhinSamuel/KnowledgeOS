@@ -24,7 +24,6 @@ class Settings(BaseSettings):
     # Cloud APIs
     LLM_PROVIDER: str = "gemini"
     GEMINI_API_KEY: str
-    OPENAI_API_KEY: Optional[str] = None
     HUGGINGFACE_API_KEY: Optional[str] = None
     LLAMAPARSE_API_KEY: Optional[str] = None
 
