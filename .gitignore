@@ -216,3 +216,10 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Graphify knowledge graph output (generated locally, not committed)
+graphify-out/
+graphify-out/**/
+
+# CI test results artifacts
+test-results/
