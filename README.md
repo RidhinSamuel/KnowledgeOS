@@ -18,13 +18,13 @@ graph TD
     FastAPI -->|1. Write metadata| MongoDB[(MongoDB - Motor)]
     FastAPI -->|2. Queue Ingestion Task| Valkey[(Valkey - Redis Streams)]
     FastAPI -->|5. Vector Search| Qdrant[(Qdrant Vector DB)]
-    FastAPI -->|6. RAG Chat Stream| GeminiLLM[Gemini 1.5 Flash API]
+    FastAPI -->|6. RAG Chat Stream| HF_LLM[Hugging Face Hub Mistral-7B / Gemini]
     
     Valkey -->|3. Read Task Group| Worker[Async Parser Worker]
     Worker -->|Fetch PDF bytes| MongoDB
     Worker -->|Extract Layout| LlamaParse[LlamaParse API]
     Worker -->|Semantic split| Chunker[Semantic Chunker]
-    Worker -->|4. Generate Vectors| GeminiEmbeddings[Gemini text-embedding-004]
+    Worker -->|4. Generate Vectors| HF_Embeddings[HF all-MiniLM-L6-v2 / Gemini]
     Worker -->|Upsert Vectors| Qdrant
 ```
 
@@ -37,7 +37,7 @@ graph TD
 - **Task Queue**: Valkey / Redis Streams (with Consumer Groups, acknowledgements, and Dead-Letter Queue retries)
 - **Document Parser**: LlamaParse API (cloud-based layout-aware parsing) with local **PyMuPDF** and **Tesseract OCR** fallbacks
 - **Vector Database**: Qdrant (payload filtering, keyword index, hybrid search)
-- **LLM & Embeddings**: Google Gemini API (`gemini-1.5-flash` for chat; `text-embedding-004` for 768-dimensional embeddings)
+- **LLM & Embeddings**: Dynamic model providers (defaults to **Hugging Face Hub Inference APIs** for free execution: `sentence-transformers/all-MiniLM-L6-v2` for embeddings and `mistralai/Mistral-7B-Instruct-v0.3` for LLM chat; supports **Google Gemini API** as an alternative)
 - **Observability**: Structlog (JSON structured logs), Prometheus, Grafana, OpenTelemetry
 - **Infrastructure**: Docker, Docker Compose, Nginx (reverse proxy with SSE optimizations)
 
@@ -84,7 +84,8 @@ KnowledgeOS/
 
 ### 1. Prerequisites
 - Docker & Docker Compose installed.
-- A **Google Gemini API Key** (from Google AI Studio).
+- A **Hugging Face Hub API Token** (for the default free model execution).
+- A **Google Gemini API Key** (if choosing the Gemini provider).
 - A **LlamaParse API Key** (optional, falls back to local PyMuPDF if unconfigured).
 
 ### 2. Configure Environment Variables
@@ -94,6 +95,8 @@ cp .env.example .env
 ```
 Fill in the API keys:
 ```env
+LLM_PROVIDER=huggingface
+HUGGINGFACE_API_KEY=your_hugging_face_token_here
 GEMINI_API_KEY=your_google_gemini_key_here
 LLAMAPARSE_API_KEY=your_llamaparse_key_here
 ```
