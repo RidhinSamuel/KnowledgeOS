@@ -61,10 +61,17 @@ async def semantic_chunk_text(text: str, google_api_key: str, similarity_thresho
 
     # 1. Fetch embeddings for all sentences in a single batch
     try:
-        embeddings_model = GoogleGenAIEmbeddings(
-            model="models/text-embedding-004", 
-            google_api_key=google_api_key
-        )
+        if settings.LLM_PROVIDER == "huggingface":
+            from langchain_community.embeddings import HuggingFaceHubEmbeddings
+            embeddings_model = HuggingFaceHubEmbeddings(
+                repo_id="sentence-transformers/all-MiniLM-L6-v2",
+                huggingfacehub_api_token=settings.HUGGINGFACE_API_KEY
+            )
+        else:
+            embeddings_model = GoogleGenAIEmbeddings(
+                model="models/text-embedding-004", 
+                google_api_key=google_api_key
+            )
         sentence_texts = [s["text"] for s in sentences]
         # Generate embeddings
         embeddings = await embeddings_model.aembed_documents(sentence_texts)

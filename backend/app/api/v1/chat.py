@@ -113,12 +113,19 @@ async def stream_chat_response(
     workspace_id = session["workspace_id"]
     user_prompt = prompt_in.prompt
     
-    # 2. Retrieve vector embeddings for the prompt via Gemini Embeddings API
+    # 2. Retrieve vector embeddings for the prompt via dynamic Provider selection
     try:
-        embeddings_model = GoogleGenAIEmbeddings(
-            model="models/text-embedding-004", 
-            google_api_key=settings.GEMINI_API_KEY
-        )
+        if settings.LLM_PROVIDER == "huggingface":
+            from langchain_community.embeddings import HuggingFaceHubEmbeddings
+            embeddings_model = HuggingFaceHubEmbeddings(
+                repo_id="sentence-transformers/all-MiniLM-L6-v2",
+                huggingfacehub_api_token=settings.HUGGINGFACE_API_KEY
+            )
+        else:
+            embeddings_model = GoogleGenAIEmbeddings(
+                model="models/text-embedding-004", 
+                google_api_key=settings.GEMINI_API_KEY
+            )
         query_vector = await embeddings_model.aembed_query(user_prompt)
     except Exception as e:
         raise HTTPException(
@@ -195,15 +202,39 @@ async def stream_chat_response(
         
         full_response = ""
         try:
-            llm = ChatGoogleGenAI(
-                model="gemini-1.5-flash", 
-                google_api_key=settings.GEMINI_API_KEY, 
-                streaming=True
-            )
-            async for chunk in llm.astream(messages):
-                token = chunk.content
-                full_response += token
-                yield f"data: {json.dumps({'event': 'token', 'data': token})}\n\n"
+            if settings.LLM_PROVIDER == "huggingface":
+                from langchain_community.llms import HuggingFaceHub
+                llm = HuggingFaceHub(
+                    repo_id="mistralai/Mistral-7B-Instruct-v0.3",
+                    huggingfacehub_api_token=settings.HUGGINGFACE_API_KEY,
+                    model_kwargs={"temperature": 0.7, "max_new_tokens": 512}
+                )
+                
+                # Format a text-based instruction prompt for the model
+                prompt_text = ""
+                for m in messages:
+                    prompt_text += f"{m.content}\n"
+                
+                # Call endpoint asynchronously
+                response_text = await llm.ainvoke(prompt_text)
+                
+                # Simulate smooth word streaming output
+                words = response_text.split(" ")
+                for word in words:
+                    token = word + " "
+                    full_response += token
+                    yield f"data: {json.dumps({'event': 'token', 'data': token})}\n\n"
+                    await asyncio.sleep(0.03) # Simulates text typing speed
+            else:
+                llm = ChatGoogleGenAI(
+                    model="gemini-1.5-flash", 
+                    google_api_key=settings.GEMINI_API_KEY, 
+                    streaming=True
+                )
+                async for chunk in llm.astream(messages):
+                    token = chunk.content
+                    full_response += token
+                    yield f"data: {json.dumps({'event': 'token', 'data': token})}\n\n"
         except Exception as e:
             error_msg = f"LLM error: {str(e)}"
             yield f"data: {json.dumps({'event': 'error', 'data': error_msg})}\n\n"

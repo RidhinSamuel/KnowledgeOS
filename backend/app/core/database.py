@@ -45,8 +45,12 @@ class DatabaseManager:
             exists = await self.qdrant_client.collection_exists(settings.QDRANT_COLLECTION_NAME)
             if not exists:
                 logger.info(f"Creating Qdrant collection: {settings.QDRANT_COLLECTION_NAME}")
-                # We use 768 dimensions for Google Gemini text-embedding-004
-                dimension = 768
+                # We dynamically set vector dimensions depending on embedding model provider
+                if settings.LLM_PROVIDER == "huggingface":
+                    dimension = 384 # sentence-transformers/all-MiniLM-L6-v2 output dimension
+                else:
+                    dimension = 768 # Google Gemini text-embedding-004 output dimension
+                    
                 await self.qdrant_client.create_collection(
                     collection_name=settings.QDRANT_COLLECTION_NAME,
                     vectors_config=VectorParams(size=dimension, distance=Distance.COSINE)

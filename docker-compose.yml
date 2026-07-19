@@ -99,6 +99,17 @@ services:
     networks:
       - knowledge-net
 
+  grafana:
+    image: grafana/grafana:latest
+    container_name: knowledge_grafana
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3000:3000"
+    depends_on:
+      - prometheus
+    networks:
+      - knowledge-net
+
 networks:
   knowledge-net:
     driver: bridge

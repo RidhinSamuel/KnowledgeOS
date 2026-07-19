@@ -16,10 +16,18 @@ async def generate_chunk_embeddings(chunks: List[Dict[str, Any]], google_api_key
         return []
         
     try:
-        embeddings_model = GoogleGenAIEmbeddings(
-            model="models/text-embedding-004", 
-            google_api_key=google_api_key
-        )
+        if settings.LLM_PROVIDER == "huggingface":
+            from langchain_community.embeddings import HuggingFaceHubEmbeddings
+            embeddings_model = HuggingFaceHubEmbeddings(
+                repo_id="sentence-transformers/all-MiniLM-L6-v2",
+                huggingfacehub_api_token=settings.HUGGINGFACE_API_KEY
+            )
+        else:
+            embeddings_model = GoogleGenAIEmbeddings(
+                model="models/text-embedding-004", 
+                google_api_key=google_api_key
+            )
+            
         texts = [c["text"] for c in chunks]
         
         # Call API
