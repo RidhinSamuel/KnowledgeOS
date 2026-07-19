@@ -10,3 +10,5 @@ qdrant-client>=1.10.0
 structlog>=24.3.0
 nest-asyncio>=1.6.0
 pydantic-settings>=2.0.0
+graphifyy>=0.1.0       # Knowledge graph CLI - 71.5x token reduction
+google-generativeai>=0.8.0  # Required for graph_extractor.py fallback

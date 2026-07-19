@@ -1,0 +1,151 @@
+name: KnowledgeOS CI/CD
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  # ─────────────────────────────────────────────────────────────────
+  # JOB 1: Lint & Unit Tests
+  # ─────────────────────────────────────────────────────────────────
+  test-backend:
+    name: 🧪 Backend Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install uv
+        run: pip install uv
+
+      - name: Create virtual environment
+        run: uv venv backend/.venv
+        working-directory: .
+
+      - name: Install backend dependencies
+        run: uv pip install -r requirements.txt pytest httpx
+        working-directory: backend
+
+      - name: Run unit tests
+        run: backend/.venv/Scripts/python -m pytest backend/test_backend.py -v --tb=short
+        env:
+          JWT_SECRET: ci-test-jwt-secret-minimum-32chars
+          JWT_REFRESH_SECRET: ci-test-jwt-refresh-secret-min-32chars
+          MONGODB_URL: mongodb://localhost:27017
+          MONGODB_DB_NAME: knowledge_os_ci
+          REDIS_URL: redis://localhost:6379
+          QDRANT_URL: http://localhost:6333
+          LLM_PROVIDER: huggingface
+          GEMINI_API_KEY: ci-placeholder
+          HUGGINGFACE_API_KEY: ci-placeholder
+          LLAMAPARSE_API_KEY: ci-placeholder
+          EMBEDDING_MODEL_NAME: all-MiniLM-L6-v2
+
+  # ─────────────────────────────────────────────────────────────────
+  # JOB 2: Lint Frontend
+  # ─────────────────────────────────────────────────────────────────
+  test-frontend:
+    name: 🎨 Frontend Lint & Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: frontend
+
+      - name: Run linter
+        run: npx oxlint .
+        working-directory: frontend
+        continue-on-error: true  # Non-blocking for now
+
+      - name: Build for production
+        run: npm run build
+        working-directory: frontend
+
+  # ─────────────────────────────────────────────────────────────────
+  # JOB 3: Docker Build Validation
+  # ─────────────────────────────────────────────────────────────────
+  docker-build:
+    name: 🐳 Docker Build Check
+    runs-on: ubuntu-latest
+    needs: [ test-backend, test-frontend ]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build backend image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          push: false
+          tags: knowledgeos-backend:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build worker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./workers
+          push: false
+          tags: knowledgeos-worker:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # ─────────────────────────────────────────────────────────────────
+  # JOB 4: Security Scan (dependency audit)
+  # ─────────────────────────────────────────────────────────────────
+  security-scan:
+    name: 🔒 Security Audit
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install pip-audit
+        run: pip install pip-audit
+
+      - name: Audit backend dependencies
+        run: pip-audit -r backend/requirements.txt --skip-editable
+        continue-on-error: true  # Report but don't block CI
+
+      - name: Audit worker dependencies
+        run: pip-audit -r workers/requirements.txt --skip-editable
+        continue-on-error: true
+
+      - name: Set up Node for npm audit
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Audit frontend dependencies
+        run: npm audit --audit-level=high
+        working-directory: frontend
+        continue-on-error: true
