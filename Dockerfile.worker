@@ -1,0 +1,29 @@
+FROM python:3.13-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+
+WORKDIR /app
+
+# Install system dependencies, including Tesseract OCR and PDF libraries
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    curl \
+    tesseract-ocr \
+    tesseract-ocr-eng \
+    libgl1-mesa-glx \
+    libglib2.0-0 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install PyTorch CPU-only version first to keep the image size small
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir torch torchvision --index-url https://download.pytorch.org/whl/cpu
+
+# Copy dependencies list and install
+COPY workers/requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy worker codebase
+COPY workers/ /app/
+
+CMD ["python", "app/main.py"]
