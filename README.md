@@ -80,44 +80,147 @@ KnowledgeOS/
 
 ---
 
-## 🚀 Getting Started
+## 🚀 Getting Started & Execution Guide
 
 ### 1. Prerequisites
-- Docker & Docker Compose installed.
-- A **Hugging Face Hub API Token** (for the default free model execution).
-- A **Google Gemini API Key** (if choosing the Gemini provider).
-- A **LlamaParse API Key** (optional, falls back to local PyMuPDF if unconfigured).
+- **Docker & Docker Compose** (Recommended for full containerized stack).
+- **Python 3.13+** & **Node.js 20+** (For local development).
+- **Hugging Face API Token** (Default free LLM provider) OR **Google Gemini API Key**.
+- **LlamaParse API Key** (Optional, falls back to PyMuPDF/Tesseract OCR).
 
-### 2. Configure Environment Variables
-Create a `.env` file in the root directory (based on `.env.example`):
+---
+
+### 2. Environment Setup
+Create a `.env` file in the project root:
 ```bash
 cp .env.example .env
 ```
-Fill in the API keys:
+
+Ensure mandatory configuration variables are set in `.env`:
 ```env
+# Auth & Security
+JWT_SECRET=your_super_secret_jwt_key_at_least_32_chars
+JWT_REFRESH_SECRET=your_super_secret_refresh_jwt_key
+
+# Databases & Queues
+MONGODB_URL=mongodb://localhost:27017
+MONGODB_DB_NAME=knowledge_os
+REDIS_URL=redis://localhost:6379
+QDRANT_URL=http://localhost:6333
+
+# LLM & Embeddings Provider ('huggingface' or 'gemini')
 LLM_PROVIDER=huggingface
-HUGGINGFACE_API_KEY=your_hugging_face_token_here
-GEMINI_API_KEY=your_google_gemini_key_here
-LLAMAPARSE_API_KEY=your_llamaparse_key_here
+HUGGINGFACE_API_KEY=your_huggingface_token
+GEMINI_API_KEY=your_gemini_api_key
 ```
 
-### 3. Spin Up Services
-Run the following command to build and launch all containers in the background:
+---
+
+### 3. Option A: Running with Docker Compose (Production / Full Stack)
+
+1. **Build and start all container services in background:**
+   ```bash
+   docker compose up --build -d
+   ```
+
+2. **Verify container health:**
+   ```bash
+   docker compose ps
+   ```
+
+3. **View logs:**
+   ```bash
+   docker compose logs -f backend worker
+   ```
+
+4. **Service Gateways:**
+   - **Frontend UI / API Proxy**: `http://localhost`
+   - **FastAPI OpenAPI Specs**: `http://localhost/docs` or `http://localhost:8000/docs`
+   - **Prometheus Monitoring**: `http://localhost:9090`
+   - **Grafana Dashboard**: `http://localhost:3000` (User: `admin`, Pass: `admin`)
+
+---
+
+### 4. Option B: Running Locally for Development
+
+#### A. Start Infrastructure Databases (MongoDB, Valkey, Qdrant)
 ```bash
-docker compose up --build -d
+docker compose up -d mongodb valkey qdrant
 ```
 
-Verify that all services are running:
+#### B. Start Backend API
 ```bash
-docker compose ps
+cd backend
+python -m venv .venv
+# On Windows PowerShell:
+.\.venv\Scripts\activate
+# On Linux/macOS:
+# source .venv/bin/activate
+
+pip install -r requirements.txt
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-### 4. Service Gateways
-- **API Gateway (Nginx)**: `http://localhost`
-- **FastAPI OpenAPI Documentation**: `http://localhost/docs`
-- **Prometheus Dashboard**: `http://localhost:9090` (restricted to localhost)
-- **MongoDB (Internal)**: `mongodb://localhost:27017` (restricted to localhost)
-- **Qdrant (Internal)**: `http://localhost:6333` (restricted to localhost)
+#### C. Start Worker Process
+In a separate terminal:
+```bash
+cd workers
+python -m venv .venv
+# On Windows PowerShell:
+.\.venv\Scripts\activate
+# On Linux/macOS:
+# source .venv/bin/activate
+
+pip install -r requirements.txt
+# Optional: Install Graphify CLI for Knowledge Graph extraction
+pip install graphifyy && graphify install
+
+python app/main.py
+```
+
+#### D. Start Frontend UI
+In a separate terminal:
+```bash
+cd frontend
+npm ci
+npm run dev
+```
+Access UI at `http://localhost:5173`.
+
+---
+
+### 5. 🧪 Running the Test Suite
+
+#### A. Backend Unit Tests (Fast, Mocked DBs)
+```bash
+# From workspace root using backend virtual environment:
+backend/.venv/Scripts/python.exe -m pytest backend/test_backend.py -v
+```
+
+#### B. Live E2E Integration Suite (Tests real API, Auth & Multi-Tenancy)
+Ensure backend is running at `http://localhost:8000`:
+```bash
+python backend/test_e2e_live.py --base-url http://localhost:8000
+```
+
+---
+
+### 6. 🕸️ Graphify Knowledge Graph Setup (Additional Feature)
+
+KnowledgeOS automatically generates a compact GraphRAG summary using `graphify`.
+- **Install Graphify in Worker Environment:**
+  ```bash
+  pip install graphifyy
+  graphify install
+  ```
+- **Codebase Knowledge Graph (Dev Tool):**
+  To visualize the codebase graph report:
+  ```bash
+  graphify update .
+  ```
+  Reports are generated in `graphify-out/GRAPH_REPORT.md` and `graphify-out/graph.html`.
+
+For a complete breakdown of all 7 additional features implemented beyond the initial requirements, see [`docs/99_Additional_Features.md`](file:///f:/Ridhin/KnowledgeOS/docs/99_Additional_Features.md).
 
 ---
 
@@ -135,3 +238,4 @@ docker compose ps
    }
    ```
    This ensures that no user can retrieve search results or interact with documents belonging to other workspaces.
+

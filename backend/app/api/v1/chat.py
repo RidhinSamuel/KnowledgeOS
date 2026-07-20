@@ -1,4 +1,5 @@
 # backend/app/api/v1/chat.py
+import asyncio
 from datetime import datetime, timezone
 import json
 from typing import List
