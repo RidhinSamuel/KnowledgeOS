@@ -1,4 +1,4 @@
-# frontend/src/components/Sidebar.jsx
+// frontend/src/components/Sidebar.jsx
 import React, { useState } from 'react';
 import { Plus, MessageSquare, Folder, LogOut, User, Cpu, ChevronDown } from 'lucide-react';
 import DecryptedText from './DecryptedText';

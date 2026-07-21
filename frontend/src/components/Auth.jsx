@@ -1,4 +1,4 @@
-# frontend/src/components/Auth.jsx
+// frontend/src/components/Auth.jsx
 import React, { useState } from 'react';
 import { Cpu, ShieldCheck, Mail, Lock, User, Plus } from 'lucide-react';
 import DecryptedText from './DecryptedText';

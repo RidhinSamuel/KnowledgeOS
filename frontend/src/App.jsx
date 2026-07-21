@@ -1,4 +1,4 @@
-# frontend/src/App.jsx
+// frontend/src/App.jsx
 import React, { useState, useEffect } from 'react';
 import Sidebar from './components/Sidebar';
 import ChatArea from './components/ChatArea';

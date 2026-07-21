@@ -1,4 +1,4 @@
-# frontend/src/components/DocumentUpload.jsx
+// frontend/src/components/DocumentUpload.jsx
 import React, { useState, useEffect } from 'react';
 import { Upload, FileText, CheckCircle, AlertTriangle, Loader2, Trash2 } from 'lucide-react';
 import canvasConfetti from 'canvas-confetti';

@@ -1,4 +1,4 @@
-# frontend/src/components/ChatArea.jsx
+// frontend/src/components/ChatArea.jsx
 import React, { useState, useEffect, useRef } from 'react';
 import { Send, FileText, Bot, User, Sparkles, AlertCircle } from 'lucide-react';
 

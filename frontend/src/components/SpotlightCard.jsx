@@ -1,4 +1,4 @@
-# frontend/src/components/SpotlightCard.jsx
+// frontend/src/components/SpotlightCard.jsx
 import React, { useRef, useState } from 'react';
 
 export default function SpotlightCard({ children, className = '', glowColor = 'rgba(99, 102, 241, 0.15)', ...props }) {

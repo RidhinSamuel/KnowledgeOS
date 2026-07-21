@@ -1,4 +1,4 @@
-# frontend/src/components/DecryptedText.jsx
+// frontend/src/components/DecryptedText.jsx
 import React, { useState, useEffect, useRef } from 'react';
 
 const CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789@#$%&*()';
