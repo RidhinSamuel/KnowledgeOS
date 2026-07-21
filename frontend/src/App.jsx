@@ -9,11 +9,29 @@ const BASE_URL = 'http://localhost:8000/api/v1';
 
 export default function App() {
   const [token, setToken] = useState(localStorage.getItem('token'));
-  const [user, setUser] = useState(JSON.parse(localStorage.getItem('user')));
+  const [user, setUser] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem('user'));
+    } catch {
+      return null;
+    }
+  });
+  
+  const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'dark');
   const [workspaces, setWorkspaces] = useState([]);
   const [activeWorkspace, setActiveWorkspace] = useState(null);
   const [chatSessions, setChatSessions] = useState([]);
   const [activeSession, setActiveSession] = useState(null);
+
+  // Sync theme with document root
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme(prev => (prev === 'dark' ? 'light' : 'dark'));
+  };
 
   // Fetch workspaces
   const fetchWorkspaces = async () => {
@@ -45,7 +63,6 @@ export default function App() {
       });
       if (response.ok) {
         const data = await response.json();
-        // Normalize IDs
         const normalized = data.map(s => ({ ...s, id: s.id || s._id }));
         setChatSessions(normalized);
         if (normalized.length > 0) {
@@ -131,12 +148,18 @@ export default function App() {
   };
 
   if (!token) {
-    return <Auth BASE_URL={BASE_URL} onSuccess={handleLoginSuccess} />;
+    return (
+      <Auth
+        BASE_URL={BASE_URL}
+        onSuccess={handleLoginSuccess}
+        theme={theme}
+        toggleTheme={toggleTheme}
+      />
+    );
   }
 
   return (
-    <div className="w-screen h-screen flex bg-[var(--bg-primary)] overflow-hidden font-sans">
-      
+    <div className="w-screen h-screen flex overflow-hidden" style={{ background: 'var(--bg-main)', color: 'var(--text-primary)' }}>
       {/* Sidebar */}
       <Sidebar
         workspaces={workspaces.map(w => ({ ...w, id: w.id || w._id }))}
@@ -149,9 +172,11 @@ export default function App() {
         onCreateWorkspace={handleCreateWorkspace}
         currentUser={user}
         onLogout={handleLogout}
+        theme={theme}
+        toggleTheme={toggleTheme}
       />
 
-      {/* Main chat center */}
+      {/* Main Chat Area */}
       <main className="flex-1 h-full flex flex-col min-w-0">
         <ChatArea
           activeSession={activeSession}
@@ -161,16 +186,13 @@ export default function App() {
         />
       </main>
 
-      {/* Right panel - document uploads list */}
-      <section className="w-80 h-full border-l border-[var(--border-glass)] bg-[var(--bg-secondary)] shrink-0">
-        <DocumentUpload
-          activeWorkspace={activeWorkspace}
-          authToken={token}
-          BASE_URL={BASE_URL}
-          onDocumentChange={fetchSessions} // Refresh sessions on document upload/deletion to reflect changes
-        />
-      </section>
-
+      {/* Right Document Ingestion Panel */}
+      <DocumentUpload
+        activeWorkspace={activeWorkspace}
+        authToken={token}
+        BASE_URL={BASE_URL}
+        onDocumentChange={fetchSessions}
+      />
     </div>
   );
 }

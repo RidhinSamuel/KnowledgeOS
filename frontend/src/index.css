@@ -1,128 +1,107 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
 
 :root {
-  --bg-primary: #0a0b0d;
-  --bg-secondary: #12141c;
-  --bg-glass: rgba(18, 20, 28, 0.7);
-  --border-glass: rgba(255, 255, 255, 0.08);
-  --border-glow: rgba(99, 102, 241, 0.2);
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
   
-  --primary: #6366f1;
-  --primary-glow: rgba(99, 102, 241, 0.4);
-  --secondary: #a855f7;
-  --secondary-glow: rgba(168, 85, 247, 0.4);
-  --accent: #10b981;
-  --accent-glow: rgba(16, 185, 129, 0.4);
+  /* Dark Mode Defaults (Primary White, Secondary Pure Black) */
+  --bg-main: #050505;
+  --bg-card: rgba(255, 255, 255, 0.03);
+  --bg-sidebar: rgba(15, 15, 15, 0.85);
+  --border-color: rgba(255, 255, 255, 0.09);
+  --border-hover: rgba(255, 255, 255, 0.25);
   
-  --text-main: #f3f4f6;
-  --text-muted: #9ca3af;
-  --text-dark: #6b7280;
-  
-  --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  --radius-lg: 16px;
-  --radius-md: 12px;
-  --radius-sm: 8px;
-  
-  --transition-fast: 0.15s ease;
-  --transition-normal: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  --transition-slow: 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  --text-primary: #ffffff;
+  --text-secondary: #a1a1aa;
+  --text-muted: #52525b;
+
+  --accent-white: #ffffff;
+  --accent-glow: rgba(255, 255, 255, 0.15);
+  --accent-badge: rgba(255, 255, 255, 0.06);
 }
 
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
+/* Light Mode Overrides */
+[data-theme="light"] {
+  --bg-main: #fafafa;
+  --bg-card: rgba(0, 0, 0, 0.03);
+  --bg-sidebar: rgba(244, 244, 245, 0.9);
+  --border-color: rgba(0, 0, 0, 0.09);
+  --border-hover: rgba(0, 0, 0, 0.25);
+  
+  --text-primary: #09090b;
+  --text-secondary: #52525b;
+  --text-muted: #a1a1aa;
+
+  --accent-white: #09090b;
+  --accent-glow: rgba(0, 0, 0, 0.08);
+  --accent-badge: rgba(0, 0, 0, 0.05);
 }
 
-body {
-  background-color: var(--bg-primary);
-  color: var(--text-main);
-  font-family: var(--font-sans);
-  overflow: hidden;
-  height: 100vh;
-  width: 100vw;
-  -webkit-font-smoothing: antialiased;
+@layer base {
+  *, *::before, *::after { box-sizing: border-box; }
+
+  html, body, #root {
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
+    font-family: 'Inter', sans-serif;
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+
+  body {
+    background-color: var(--bg-main);
+    color: var(--text-primary);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(160, 160, 160, 0.2); border-radius: 99px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--text-secondary); }
 }
 
-/* Custom Scrollbars */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 10px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: var(--primary-glow);
-}
-
-/* Glassmorphism Classes */
+/* Glassmorphism utility classes */
 .glass-panel {
-  background: var(--bg-glass);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid var(--border-glass);
-  border-radius: var(--radius-lg);
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
 }
 
-.glass-card {
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid var(--border-glass);
-  border-radius: var(--radius-md);
-  transition: var(--transition-normal);
+.glass-panel:hover {
+  border-color: var(--border-hover);
 }
 
-.glass-card:hover {
-  background: rgba(255, 255, 255, 0.04);
-  border-color: var(--primary-glow);
-  box-shadow: 0 0 15px var(--primary-glow);
-  transform: translateY(-2px);
+.btn-primary {
+  background: var(--text-primary);
+  color: var(--bg-main);
+  font-weight: 700;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 14px var(--accent-glow);
 }
 
-/* Gradient text */
-.text-gradient {
-  background: linear-gradient(135deg, #818cf8 0%, #c084fc 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+.btn-primary:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
 }
 
-.text-gradient-green {
-  background: linear-gradient(135deg, #34d399 0%, #059669 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+.input-monochrome {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  transition: all 0.2s ease;
 }
 
-/* Keyframes */
-@keyframes float {
-  0% { transform: translateY(0px); }
-  50% { transform: translateY(-10px); }
-  100% { transform: translateY(0px); }
+.input-monochrome:focus {
+  border-color: var(--text-primary);
+  box-shadow: 0 0 0 2px var(--accent-glow);
+  outline: none;
 }
 
-@keyframes pulse-glow {
-  0% { box-shadow: 0 0 5px var(--primary-glow); }
-  50% { box-shadow: 0 0 20px var(--primary-glow); }
-  100% { box-shadow: 0 0 5px var(--primary-glow); }
+/* Animations */
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
-@keyframes slide-in {
-  from { transform: translateY(20px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
-}
-
-.animate-float {
-  animation: float 6s ease-in-out infinite;
-}
-
-.animate-pulse-glow {
-  animation: pulse-glow 3s infinite;
-}
-
-.animate-slide-in {
-  animation: slide-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
+.animate-fade-up { animation: fade-up 0.3s cubic-bezier(0.16, 1, 0.3, 1) both; }

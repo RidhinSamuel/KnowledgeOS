@@ -1,6 +1,6 @@
 // frontend/src/components/ChatArea.jsx
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, FileText, Bot, User, Sparkles, AlertCircle } from 'lucide-react';
+import { Send, FileText, Bot, User, Sparkles, AlertCircle, RefreshCw } from 'lucide-react';
 
 export default function ChatArea({
   activeSession = null,
@@ -136,44 +136,73 @@ export default function ChatArea({
 
   if (!activeSession) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center text-center p-8 bg-[var(--bg-primary)]">
-        <Sparkles className="w-12 h-12 text-[var(--primary)] mb-4 animate-float" />
-        <h3 className="text-lg font-bold text-white mb-2">Welcome to KnowledgeOS</h3>
-        <p className="text-xs text-[var(--text-muted)] max-w-sm">
-          Select or create a chat session in the sidebar to search and verify details within your workspaces.
-        </p>
+      <div className="flex-1 flex flex-col items-center justify-center text-center p-8 relative overflow-hidden"
+        style={{ background: 'rgba(255,255,255,0.015)' }}>
+        
+        {/* Decorative background glow */}
+        <div className="w-96 h-96 rounded-full absolute pointer-events-none opacity-20 blur-3xl"
+          style={{ background: 'radial-gradient(circle, #6366f1, #8b5cf6)' }} />
+
+        <div className="relative z-10 flex flex-col items-center max-w-md">
+          <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-6 animate-pulse-glow"
+            style={{ background: 'linear-gradient(135deg, rgba(99,102,241,0.2), rgba(139,92,246,0.2))', border: '1px solid rgba(99,102,241,0.3)' }}>
+            <Sparkles className="w-8 h-8 text-indigo-400" />
+          </div>
+          <h3 className="text-xl font-bold text-white mb-2 tracking-tight">Enterprise Knowledge Search</h3>
+          <p className="text-xs text-slate-400 leading-relaxed mb-6">
+            Select or create a chat session in the sidebar to query your ingested documents with real-time vector search & graph retrieval.
+          </p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-[var(--bg-primary)] overflow-hidden">
+    <div className="flex-1 flex flex-col h-full overflow-hidden relative"
+      style={{ background: 'rgba(255,255,255,0.015)' }}>
       
-      {/* Messages viewport */}
-      <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-6">
+      {/* Messages Viewport */}
+      <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-6 max-w-4xl w-full mx-auto">
         {messages.map((msg) => (
           <div
             key={msg.id}
-            className={`flex gap-4 max-w-3xl animate-slide-in ${
+            className={`flex gap-3 max-w-2xl animate-fade-up ${
               msg.role === 'user' ? 'self-end flex-row-reverse' : 'self-start'
             }`}
           >
             {/* Avatar */}
-            <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 border ${
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 border ${
               msg.role === 'user' 
-                ? 'bg-[var(--primary-glow)] border-[var(--primary)] text-white' 
-                : 'bg-[rgba(255,255,255,0.02)] border-[var(--border-glass)] text-[var(--secondary)]'
+                ? 'bg-indigo-500/20 border-indigo-500/30 text-indigo-400' 
+                : 'bg-violet-500/20 border-violet-500/30 text-violet-400'
             }`}>
               {msg.role === 'user' ? <User className="w-4 h-4" /> : <Bot className="w-4 h-4" />}
             </div>
 
             {/* Bubble */}
-            <div className={`p-4 rounded-[var(--radius-lg)] border ${
+            <div className={`p-4 rounded-2xl text-sm leading-relaxed ${
               msg.role === 'user'
-                ? 'bg-[var(--primary-glow)] border-[var(--primary)] text-white'
-                : 'bg-[rgba(255,255,255,0.01)] border-[var(--border-glass)] text-[var(--text-main)]'
-            }`}>
-              <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.content}</p>
+                ? 'rounded-tr-none text-white'
+                : 'rounded-tl-none text-slate-200'
+            }`}
+            style={msg.role === 'user' ? {
+              background: 'rgba(99,102,241,0.18)',
+              border: '1px solid rgba(99,102,241,0.3)',
+              boxShadow: '0 4px 20px rgba(99,102,241,0.1)'
+            } : {
+              background: 'rgba(255,255,255,0.03)',
+              border: '1px solid rgba(255,255,255,0.07)',
+              backdropFilter: 'blur(12px)'
+            }}>
+              {msg.content ? (
+                <p className="whitespace-pre-wrap">{msg.content}</p>
+              ) : (
+                <div className="flex items-center gap-1.5 py-1">
+                  <span className="w-2 h-2 rounded-full bg-indigo-400 animate-bounce" />
+                  <span className="w-2 h-2 rounded-full bg-indigo-400 animate-bounce [animation-delay:0.2s]" />
+                  <span className="w-2 h-2 rounded-full bg-indigo-400 animate-bounce [animation-delay:0.4s]" />
+                </div>
+              )}
             </div>
           </div>
         ))}
@@ -182,20 +211,20 @@ export default function ChatArea({
 
       {/* Sources footer for assistant responses */}
       {activeSources.length > 0 && (
-        <div className="px-6 py-3 border-t border-[var(--border-glass)] bg-[rgba(0,0,0,0.15)] flex flex-col gap-2">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-dark)] flex items-center gap-1">
-            <FileText className="w-3.5 h-3.5" /> Retrieved Sources
+        <div className="px-6 py-3 border-t border-white/5 bg-black/20 flex flex-col gap-2 max-w-4xl w-full mx-auto">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+            <FileText className="w-3.5 h-3.5 text-indigo-400" /> Retrieved Citation Sources
           </span>
           <div className="flex gap-2 overflow-x-auto pb-1">
             {activeSources.map((src, i) => (
               <div
                 key={i}
-                className="flex items-center gap-2 p-2 rounded-[var(--radius-sm)] border border-[var(--border-glass)] bg-[rgba(255,255,255,0.01)] text-[10px] text-white shrink-0 hover:border-[var(--primary-glow)] transition-all"
+                className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-white/10 bg-white/5 text-[11px] text-slate-200 shrink-0 hover:border-indigo-500/50 transition-all cursor-default"
                 title={`Relevance score: ${(src.score * 100).toFixed(1)}%`}
               >
-                <FileText className="w-3 h-3 text-[var(--primary)]" />
-                <span className="font-semibold truncate max-w-[120px]">{src.filename}</span>
-                <span className="text-[var(--text-muted)] font-medium">p. {src.page}</span>
+                <FileText className="w-3.5 h-3.5 text-indigo-400" />
+                <span className="font-semibold truncate max-w-[140px]">{src.filename}</span>
+                <span className="text-slate-500 font-medium">p. {src.page}</span>
               </div>
             ))}
           </div>
@@ -203,22 +232,30 @@ export default function ChatArea({
       )}
 
       {/* Input panel */}
-      <div className="p-6 border-t border-[var(--border-glass)] bg-[rgba(0,0,0,0.2)]">
-        <form onSubmit={handleSend} className="relative flex items-center">
+      <div className="p-4 border-t border-white/5 bg-black/30 backdrop-blur-md">
+        <form onSubmit={handleSend} className="relative flex items-center max-w-4xl w-full mx-auto">
           <input
             type="text"
-            placeholder={isStreaming ? "Generating answer..." : "Ask your workspace database..."}
+            placeholder={isStreaming ? "Generating vector-grounded answer..." : "Ask questions across your workspace knowledge base..."}
             value={input}
             onChange={(e) => setInput(e.target.value)}
             disabled={isStreaming}
-            className="w-full p-4 pr-16 text-sm rounded-[var(--radius-lg)] bg-[var(--bg-secondary)] border border-[var(--border-glass)] text-white focus:outline-none focus:border-[var(--primary)] focus:shadow-[0_0_15px_rgba(99,102,241,0.1)] transition-all disabled:opacity-50"
+            className="w-full py-4 pl-5 pr-14 text-sm rounded-2xl text-white transition-all disabled:opacity-50"
+            style={{
+              background: 'rgba(255,255,255,0.04)',
+              border: '1px solid rgba(255,255,255,0.08)',
+              outline: 'none'
+            }}
+            onFocus={e => { e.target.style.borderColor = '#6366f1'; e.target.style.boxShadow = '0 0 0 3px rgba(99,102,241,0.12)'; }}
+            onBlur={e => { e.target.style.borderColor = 'rgba(255,255,255,0.08)'; e.target.style.boxShadow = 'none'; }}
           />
           <button
             type="submit"
             disabled={!input.trim() || isStreaming}
-            className="absolute right-3 p-2.5 rounded-[var(--radius-md)] bg-[var(--primary)] hover:bg-indigo-700 text-white transition-all disabled:opacity-30 disabled:hover:bg-[var(--primary)]"
+            className="absolute right-2.5 p-2.5 rounded-xl text-white transition-all disabled:opacity-30 disabled:hover:scale-100 hover:scale-105 cursor-pointer"
+            style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', boxShadow: '0 2px 10px rgba(99,102,241,0.3)' }}
           >
-            <Send className="w-4 h-4" />
+            {isStreaming ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
           </button>
         </form>
       </div>

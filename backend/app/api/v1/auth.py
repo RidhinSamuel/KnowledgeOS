@@ -20,15 +20,17 @@ async def register(user_in: UserCreate, db: AsyncIOMotorDatabase = Depends(get_d
             detail="A user with this email address already exists"
         )
     
-    # Hash password
+    # Hash password safely
     hashed_password = get_password_hash(user_in.password)
     
+    role_val = user_in.role.value if hasattr(user_in.role, 'value') else str(user_in.role)
+
     # Prepare document
     user_doc = {
         "email": user_in.email,
         "hashed_password": hashed_password,
         "full_name": user_in.full_name,
-        "role": user_in.role.value,
+        "role": role_val,
         "created_at": datetime.now(timezone.utc)
     }
     

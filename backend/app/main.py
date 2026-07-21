@@ -1,4 +1,12 @@
 # backend/app/main.py
+import sys
+from pathlib import Path
+
+# Ensure backend root directory is in sys.path so 'from app.core...' works from any directory
+backend_dir = Path(__file__).resolve().parent.parent
+if str(backend_dir) not in sys.path:
+    sys.path.insert(0, str(backend_dir))
+
 from contextlib import asynccontextmanager
 import time
 import logging
@@ -41,10 +49,17 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# CORS middleware
+# CORS middleware — allow local dev servers and wildcard regex for credentialed browser requests
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "http://localhost:3000",
+        "http://localhost:8000",
+        "http://localhost:8001"
+    ],
+    allow_origin_regex=r"http://localhost:\d+",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -100,8 +115,8 @@ async def health_check():
         }
     }
 
-# Register API routes
-app.include_router(auth.router, prefix=f"{settings.API_V1_STR}/auth", tags=["Authentication"])
-app.include_router(workspaces.router, prefix=f"{settings.API_V1_STR}/workspaces", tags=["Workspaces"])
-app.include_router(documents.router, prefix=f"{settings.API_V1_STR}/documents", tags=["Documents"])
-app.include_router(chat.router, prefix=f"{settings.API_V1_STR}/chat", tags=["Chat"])
+# Include API v1 Routers
+app.include_router(auth.router, prefix=f"{settings.API_V1_STR}/auth", tags=["auth"])
+app.include_router(workspaces.router, prefix=f"{settings.API_V1_STR}/workspaces", tags=["workspaces"])
+app.include_router(documents.router, prefix=f"{settings.API_V1_STR}/documents", tags=["documents"])
+app.include_router(chat.router, prefix=f"{settings.API_V1_STR}/chat", tags=["chat"])
