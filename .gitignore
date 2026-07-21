@@ -223,3 +223,5 @@ graphify-out/**/
 
 # CI test results artifacts
 test-results/
+node_modules
+frontend/node_modules

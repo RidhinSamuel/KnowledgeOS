@@ -61,7 +61,7 @@ jobs:
       - name: Run unit tests (mocked DBs — no Docker needed)
         run: |
           source .venv/bin/activate
-          python -m pytest test_backend.py -v --tb=short \
+          python -m pytest tests/ test_backend.py -v --tb=short \
             --junit-xml=../test-results/unit-tests.xml
         working-directory: backend
         env:
@@ -120,11 +120,6 @@ jobs:
         image: qdrant/qdrant:v1.10.1
         ports:
           - 6333:6333
-        options: >-
-          --health-cmd "curl -sf http://localhost:6333/healthz"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
 
     steps:
       - name: Checkout code
@@ -172,6 +167,14 @@ jobs:
           LLAMAPARSE_API_KEY: ${{ env.LLAMAPARSE_API_KEY }}
           EMBEDDING_MODEL_NAME: ${{ env.EMBEDDING_MODEL_NAME }}
           QDRANT_COLLECTION_NAME: ${{ env.QDRANT_COLLECTION_NAME }}
+
+      - name: Wait for Qdrant service readiness
+        run: |
+          for i in $(seq 1 15); do
+            curl -sf http://localhost:6333/healthz && echo "Qdrant ready!" && break
+            echo "Waiting for Qdrant (Attempt $i)..."
+            sleep 2
+          done
 
       - name: Create Qdrant collection
         run: |

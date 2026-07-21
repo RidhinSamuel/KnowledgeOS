@@ -36,6 +36,23 @@ async def lifespan(app: FastAPI):
     logger.info("Initializing application startup...")
     await db_manager.connect()
     
+    # Auto-seed default dev user in non-production environments
+    if settings.ENVIRONMENT != "production":
+        db = db_manager.db
+        if db is not None:
+            admin = await db.users.find_one({"email": "admin@knowledgeos.dev"})
+            if not admin:
+                from datetime import datetime, timezone
+                from app.core.security import get_password_hash
+                await db.users.insert_one({
+                    "email": "admin@knowledgeos.dev",
+                    "hashed_password": get_password_hash("admin123"),
+                    "full_name": "Dev Admin",
+                    "role": "Owner",
+                    "created_at": datetime.now(timezone.utc)
+                })
+                logger.info("Default dev user seeded: admin@knowledgeos.dev / admin123")
+    
     yield
     
     # Shutdown actions

@@ -14,6 +14,7 @@ class Settings(BaseSettings):
     PROJECT_NAME: str = "KnowledgeOS"
     API_V1_STR: str = "/api/v1"
     LOG_LEVEL: str = "INFO"
+    ENVIRONMENT: str = "development"
 
     # Security
     JWT_SECRET: str
