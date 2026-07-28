@@ -25,12 +25,16 @@ def test_stream_chat_response_redis_cache_hit(app_client):
     mock_redis = AsyncMock()
     mock_redis.get.return_value = '{"content": "Fast cached response", "sources": [{"filename": "doc.pdf", "page": 1}]}'
 
+    mock_qdrant = AsyncMock()
+
     async def override_db(): return mock_db
     async def override_redis(): return mock_redis
+    async def override_qdrant(): return mock_qdrant
     async def override_token(): return {"sub": user_id, "role": "Viewer"}
 
     app.dependency_overrides[get_db] = override_db
     app.dependency_overrides[get_redis] = override_redis
+    app.dependency_overrides[get_qdrant] = override_qdrant
     app.dependency_overrides[get_current_user_token] = override_token
 
     response = app_client.post(

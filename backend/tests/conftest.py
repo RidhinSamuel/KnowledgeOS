@@ -8,6 +8,10 @@ def mock_db_lifecycle():
     """Mock DB startup & connection lifecycle globally for unit/smoke tests."""
     with patch("app.core.database.DatabaseManager.connect", new_callable=AsyncMock), \
          patch("app.core.database.DatabaseManager._ensure_qdrant_collection", new_callable=AsyncMock):
+        from app.core.database import db_manager
+        db_manager.qdrant_client = AsyncMock()
+        db_manager.redis_client = AsyncMock()
+        db_manager.db = MagicMock()
         yield
 
 @pytest.fixture
