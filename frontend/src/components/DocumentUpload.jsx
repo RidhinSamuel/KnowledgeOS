@@ -124,11 +124,11 @@ export default function DocumentUpload({
   };
 
   return (
-    <aside className="w-80 h-screen shrink-0 flex flex-col p-5 gap-5 border-l border-white/10 bg-white/[0.02] relative z-10 overflow-hidden">
+    <aside className="w-80 h-screen shrink-0 flex flex-col p-5 gap-5 border-l relative z-10 overflow-hidden" style={{ background: 'var(--bg-sidebar)', borderColor: 'var(--border-color)' }}>
       
       {/* Header */}
       <div>
-        <h2 className="text-base font-extrabold text-white tracking-tight">Knowledge Ingestion</h2>
+        <h2 className="text-base font-extrabold tracking-tight" style={{ color: 'var(--text-primary)' }}>Knowledge Ingestion</h2>
         <p className="text-xs text-slate-400 mt-0.5">Ingest PDFs for background parsing and vector indexing</p>
       </div>
 
@@ -144,9 +144,9 @@ export default function DocumentUpload({
           }}
           onClick={() => document.getElementById('file-input').click()}
           className={`border-2 border-dashed rounded-2xl p-6 text-center flex flex-col items-center justify-center gap-3 transition-all cursor-pointer ${
-            dragOver ? 'border-indigo-500 bg-indigo-500/10' : 'border-white/10 hover:border-indigo-500/40 hover:bg-white/[0.02]'
+            dragOver ? 'border-indigo-500 bg-indigo-500/10' : 'hover:border-indigo-500/40'
           }`}
-          style={{ background: dragOver ? 'rgba(99,102,241,0.1)' : 'rgba(255,255,255,0.02)' }}
+          style={{ background: dragOver ? 'rgba(99,102,241,0.1)' : 'var(--bg-card)', borderColor: 'var(--border-color)' }}
         >
           <input
             id="file-input"
@@ -159,7 +159,7 @@ export default function DocumentUpload({
           {isUploading ? (
             <>
               <Loader2 className="w-8 h-8 text-indigo-400 animate-spin" />
-              <span className="text-xs text-white font-medium">{uploadProgress}</span>
+              <span className="text-xs font-medium" style={{ color: 'var(--text-primary)' }}>{uploadProgress}</span>
             </>
           ) : (
             <>
@@ -167,14 +167,14 @@ export default function DocumentUpload({
                 <Upload className="w-6 h-6 text-indigo-400" />
               </div>
               <div>
-                <span className="text-xs font-bold text-white block">Drop PDF file here</span>
+                <span className="text-xs font-bold block" style={{ color: 'var(--text-primary)' }}>Drop PDF file here</span>
                 <span className="text-[10px] text-slate-500 mt-0.5 block">Up to 50MB per document</span>
               </div>
             </>
           )}
         </div>
       ) : (
-        <div className="p-4 rounded-xl border border-white/10 text-center text-xs text-slate-500 bg-white/[0.01]">
+        <div className="p-4 rounded-xl border text-center text-xs font-semibold" style={{ borderColor: 'var(--border-color)', background: 'var(--bg-card)', color: 'var(--text-secondary)' }}>
           Select a workspace from sidebar to upload files.
         </div>
       )}
@@ -182,26 +182,27 @@ export default function DocumentUpload({
       {/* Documents List */}
       <div className="flex-1 flex flex-col min-h-0">
         <div className="flex items-center justify-between mb-3">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+          <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>
             Workspace Files ({documents.length})
           </span>
         </div>
         
         <div className="flex-1 overflow-y-auto flex flex-col gap-2 pr-1">
           {documents.length === 0 ? (
-            <div className="text-center py-10 text-xs text-slate-600">
+            <div className="text-center py-10 text-xs font-semibold" style={{ color: 'var(--text-secondary)' }}>
               No files uploaded yet
             </div>
           ) : (
             documents.map((doc) => (
               <div
                 key={doc.id}
-                className="flex items-center justify-between p-3 rounded-xl border border-white/10 bg-white/[0.02] hover:bg-white/[0.04] transition-all group"
+                className="flex items-center justify-between p-3 rounded-xl border transition-all group"
+                style={{ borderColor: 'var(--border-color)', background: 'var(--bg-card)' }}
               >
                 <div className="flex items-center gap-3 overflow-hidden">
-                  <FileText className="w-4 h-4 text-slate-400 shrink-0" />
+                  <FileText className="w-4 h-4 shrink-0" style={{ color: 'var(--text-secondary)' }} />
                   <div className="overflow-hidden">
-                    <span className="text-xs font-semibold text-white truncate block">
+                    <span className="text-xs font-semibold truncate block" style={{ color: 'var(--text-primary)' }}>
                       {doc.filename}
                     </span>
                     <span className="text-[10px] text-slate-500 block">

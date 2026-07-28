@@ -148,7 +148,7 @@ export default function ChatArea({
             style={{ background: 'linear-gradient(135deg, rgba(99,102,241,0.2), rgba(139,92,246,0.2))', border: '1px solid rgba(99,102,241,0.3)' }}>
             <Sparkles className="w-8 h-8 text-indigo-400" />
           </div>
-          <h3 className="text-xl font-bold text-white mb-2 tracking-tight">Enterprise Knowledge Search</h3>
+          <h3 className="text-xl font-bold mb-2 tracking-tight" style={{ color: 'var(--text-primary)' }}>Enterprise Knowledge Search</h3>
           <p className="text-xs text-slate-400 leading-relaxed mb-6">
             Select or create a chat session in the sidebar to query your ingested documents with real-time vector search & graph retrieval.
           </p>
@@ -232,7 +232,7 @@ export default function ChatArea({
       )}
 
       {/* Input panel */}
-      <div className="p-4 border-t border-white/5 bg-black/30 backdrop-blur-md">
+      <div className="p-4 border-t backdrop-blur-md" style={{ borderColor: 'var(--border-color)', background: 'var(--bg-sidebar)' }}>
         <form onSubmit={handleSend} className="relative flex items-center max-w-4xl w-full mx-auto">
           <input
             type="text"
@@ -240,10 +240,11 @@ export default function ChatArea({
             value={input}
             onChange={(e) => setInput(e.target.value)}
             disabled={isStreaming}
-            className="w-full py-4 pl-5 pr-14 text-sm rounded-2xl text-white transition-all disabled:opacity-50"
+            className="w-full py-4 pl-5 pr-14 text-sm rounded-2xl transition-all disabled:opacity-50"
             style={{
-              background: 'rgba(255,255,255,0.04)',
-              border: '1px solid rgba(255,255,255,0.08)',
+              background: 'var(--bg-card)',
+              border: '1px solid var(--border-color)',
+              color: 'var(--text-primary)',
               outline: 'none'
             }}
             onFocus={e => { e.target.style.borderColor = '#6366f1'; e.target.style.boxShadow = '0 0 0 3px rgba(99,102,241,0.12)'; }}

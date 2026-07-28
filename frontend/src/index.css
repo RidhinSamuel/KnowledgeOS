@@ -22,19 +22,19 @@
 
 /* Light Mode Overrides */
 [data-theme="light"] {
-  --bg-main: #fafafa;
-  --bg-card: rgba(0, 0, 0, 0.03);
-  --bg-sidebar: rgba(244, 244, 245, 0.9);
-  --border-color: rgba(0, 0, 0, 0.09);
-  --border-hover: rgba(0, 0, 0, 0.25);
+  --bg-main: #f8fafc;
+  --bg-card: #ffffff;
+  --bg-sidebar: #f1f5f9;
+  --border-color: #cbd5e1;
+  --border-hover: #94a3b8;
   
-  --text-primary: #09090b;
-  --text-secondary: #52525b;
-  --text-muted: #a1a1aa;
+  --text-primary: #0f172a;
+  --text-secondary: #334155;
+  --text-muted: #64748b;
 
-  --accent-white: #09090b;
-  --accent-glow: rgba(0, 0, 0, 0.08);
-  --accent-badge: rgba(0, 0, 0, 0.05);
+  --accent-white: #0f172a;
+  --accent-glow: rgba(15, 23, 42, 0.08);
+  --accent-badge: rgba(15, 23, 42, 0.05);
 }
 
 @layer base {

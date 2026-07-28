@@ -5,7 +5,9 @@ import ChatArea from './components/ChatArea';
 import DocumentUpload from './components/DocumentUpload';
 import Auth from './components/Auth';
 
-const BASE_URL = 'http://localhost:8000/api/v1';
+const BASE_URL = typeof window !== 'undefined' && window.location.port === '5173'
+  ? 'http://localhost:8000/api/v1'
+  : '/api/v1';
 
 export default function App() {
   const [token, setToken] = useState(localStorage.getItem('token'));

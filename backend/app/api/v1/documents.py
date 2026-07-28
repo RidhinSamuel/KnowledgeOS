@@ -56,13 +56,11 @@ async def upload_document(
     
     # 2. Upload PDF binary to MongoDB GridFS
     fs = AsyncIOMotorGridFSBucket(db)
-    grid_in = await fs.open_upload_stream(
+    gridfs_id = str(await fs.upload_from_stream(
         filename=file.filename,
+        source=file_bytes,
         metadata={"content_type": file.content_type, "workspace_id": workspace_id}
-    )
-    await grid_in.write(file_bytes)
-    await grid_in.close()
-    gridfs_id = str(grid_in._id)
+    ))
     
     # 3. Create document record in database
     doc_record = {
