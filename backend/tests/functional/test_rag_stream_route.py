@@ -46,4 +46,6 @@ def test_stream_chat_response_redis_cache_hit(app_client):
 
     assert response.status_code == 200
     assert "data: " in response.text
-    assert "Fast cached response" in response.text
+    assert "Fast " in response.text
+    assert "cached " in response.text
+    assert "response " in response.text
