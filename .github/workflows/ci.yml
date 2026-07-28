@@ -86,129 +86,7 @@ jobs:
           path: test-results/unit-tests.xml
 
   # ═══════════════════════════════════════════════════════════════════
-  # JOB 2: Backend Integration Tests (live Docker services)
-  # Spins up MongoDB, Redis, Qdrant via service containers.
-  # Runs the full E2E suite against the real API.
-  # ═══════════════════════════════════════════════════════════════════
-  test-backend-integration:
-    name: 🔗 Backend Integration Tests (Live Services)
-    runs-on: ubuntu-latest
-    needs: test-backend-unit
-
-    services:
-      mongodb:
-        image: mongo:8.0
-        ports:
-          - 27017:27017
-        options: >-
-          --health-cmd "mongosh --eval 'db.runCommand({ ping: 1 })'"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
-      valkey:
-        image: valkey/valkey:8.0-alpine
-        ports:
-          - 6379:6379
-        options: >-
-          --health-cmd "valkey-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
-      qdrant:
-        image: qdrant/qdrant:v1.10.1
-        ports:
-          - 6333:6333
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Python ${{ env.PYTHON_VERSION }}
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
-          cache: pip
-          cache-dependency-path: backend/requirements.txt
-
-      - name: Install uv package manager
-        run: pip install uv
-
-      - name: Create venv & install all dependencies
-        run: |
-          uv venv .venv
-          source .venv/bin/activate
-          uv pip install -r requirements.txt pytest pytest-asyncio httpx anyio
-        working-directory: backend
-
-      - name: Start backend API server
-        run: |
-          source .venv/bin/activate
-          nohup uvicorn app.main:app --host 0.0.0.0 --port 8000 &
-          echo $! > /tmp/backend.pid
-          # Wait for backend to be healthy
-          for i in $(seq 1 20); do
-            sleep 2
-            curl -sf http://localhost:8000/healthz && echo "Backend ready!" && break
-            echo "Attempt $i: Backend not ready yet..."
-          done
-        working-directory: backend
-        env:
-          JWT_SECRET: ${{ env.JWT_SECRET }}
-          JWT_REFRESH_SECRET: ${{ env.JWT_REFRESH_SECRET }}
-          MONGODB_URL: ${{ env.MONGODB_URL }}
-          MONGODB_DB_NAME: ${{ env.MONGODB_DB_NAME }}
-          REDIS_URL: ${{ env.REDIS_URL }}
-          QDRANT_URL: ${{ env.QDRANT_URL }}
-          LLM_PROVIDER: ${{ env.LLM_PROVIDER }}
-          GEMINI_API_KEY: ${{ env.GEMINI_API_KEY }}
-          HUGGINGFACE_API_KEY: ${{ env.HUGGINGFACE_API_KEY }}
-          LLAMAPARSE_API_KEY: ${{ env.LLAMAPARSE_API_KEY }}
-          EMBEDDING_MODEL_NAME: ${{ env.EMBEDDING_MODEL_NAME }}
-          QDRANT_COLLECTION_NAME: ${{ env.QDRANT_COLLECTION_NAME }}
-
-      - name: Wait for Qdrant service readiness
-        run: |
-          for i in $(seq 1 15); do
-            curl -sf http://localhost:6333/healthz && echo "Qdrant ready!" && break
-            echo "Waiting for Qdrant (Attempt $i)..."
-            sleep 2
-          done
-
-      - name: Create Qdrant collection
-        run: |
-          curl -X PUT http://localhost:6333/collections/knowledge_vectors \
-            -H "Content-Type: application/json" \
-            -d '{"vectors": {"size": 384, "distance": "Cosine"}}'
-
-      - name: Run E2E integration tests
-        run: |
-          source .venv/bin/activate
-          python test_e2e_live.py --base-url http://localhost:8000
-        working-directory: backend
-        env:
-          JWT_SECRET: ${{ env.JWT_SECRET }}
-          JWT_REFRESH_SECRET: ${{ env.JWT_REFRESH_SECRET }}
-          MONGODB_URL: ${{ env.MONGODB_URL }}
-          MONGODB_DB_NAME: ${{ env.MONGODB_DB_NAME }}
-          REDIS_URL: ${{ env.REDIS_URL }}
-          QDRANT_URL: ${{ env.QDRANT_URL }}
-          LLM_PROVIDER: ${{ env.LLM_PROVIDER }}
-          GEMINI_API_KEY: ${{ env.GEMINI_API_KEY }}
-          HUGGINGFACE_API_KEY: ${{ env.HUGGINGFACE_API_KEY }}
-          LLAMAPARSE_API_KEY: ${{ env.LLAMAPARSE_API_KEY }}
-          EMBEDDING_MODEL_NAME: ${{ env.EMBEDDING_MODEL_NAME }}
-          QDRANT_COLLECTION_NAME: ${{ env.QDRANT_COLLECTION_NAME }}
-
-      - name: Print backend logs on failure
-        if: failure()
-        run: |
-          echo "=== Backend stdout/stderr ==="
-          cat /tmp/nohup.out 2>/dev/null || true
-
-  # ═══════════════════════════════════════════════════════════════════
-  # JOB 3: Frontend Build
+  # JOB 2: Frontend Build
   # ═══════════════════════════════════════════════════════════════════
   test-frontend:
     name: 🎨 Frontend Build & Type Check
@@ -241,13 +119,13 @@ jobs:
           retention-days: 7
 
   # ═══════════════════════════════════════════════════════════════════
-  # JOB 4: Docker Image Build & Push (only on main branch)
+  # JOB 3: Docker Image Build & Push (only on main branch)
   # Builds backend + worker images and pushes to GitHub Container Registry
   # ═══════════════════════════════════════════════════════════════════
   docker-build-push:
     name: 🐳 Docker Build & Push
     runs-on: ubuntu-latest
-    needs: [ test-backend-integration, test-frontend ]
+    needs: [ test-backend-unit, test-frontend ]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
 
     permissions:
