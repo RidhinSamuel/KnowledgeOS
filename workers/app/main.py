@@ -1,4 +1,12 @@
 # workers/app/main.py
+import sys
+from pathlib import Path
+
+# Ensure workers directory is in sys.path so 'from app...' works regardless of CWD
+workers_dir = Path(__file__).resolve().parent.parent
+if str(workers_dir) not in sys.path:
+    sys.path.insert(0, str(workers_dir))
+
 import asyncio
 import os
 import signal

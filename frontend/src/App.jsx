@@ -120,9 +120,15 @@ export default function App() {
         const newWS = await response.json();
         setWorkspaces(prev => [...prev, newWS]);
         setActiveWorkspace(newWS.id || newWS._id);
+      } else {
+        // Surface API errors to the user instead of failing silently
+        const errorText = await response.text().catch(() => 'Unknown error');
+        console.error(`Workspace creation failed: ${response.status} - ${errorText}`);
+        alert(`Failed to create workspace: ${response.status} ${response.statusText}`);
       }
     } catch (e) {
-      console.error(e);
+      console.error('Workspace creation error:', e);
+      alert(`Failed to create workspace: ${e.message}`);
     }
   };
 

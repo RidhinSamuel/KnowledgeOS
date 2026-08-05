@@ -31,18 +31,15 @@ class CRAGState(TypedDict):
 
 async def get_embeddings_model():
     """Dynamically initializes embeddings model based on configuration."""
-    if settings.LLM_PROVIDER == "huggingface":
-        from langchain_community.embeddings import HuggingFaceHubEmbeddings
-        return HuggingFaceHubEmbeddings(
-            repo_id="sentence-transformers/all-MiniLM-L6-v2",
-            huggingfacehub_api_token=settings.HUGGINGFACE_API_KEY
-        )
-    else:
-        from langchain_google_genai import GoogleGenerativeAIEmbeddings
-        return GoogleGenerativeAIEmbeddings(
-            model="models/text-embedding-004",
-            google_api_key=settings.GEMINI_API_KEY
-        )
+    from langchain_huggingface import HuggingFaceEndpointEmbeddings
+    import os
+    hf_token = os.environ.get("HUGGINGFACE_API_KEY") or getattr(settings, "HUGGINGFACE_API_KEY", None)
+    return HuggingFaceEndpointEmbeddings(
+        model="sentence-transformers/all-MiniLM-L6-v2",
+        task="feature-extraction",
+        huggingfacehub_api_token=hf_token
+    )
+
 
 
 async def get_chat_model():

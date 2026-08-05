@@ -75,36 +75,57 @@ export default function DocumentUpload({
     return () => clearInterval(timer);
   }, [documents, authToken]);
 
-  const handleUpload = async (file) => {
-    if (!file || !activeWorkspace) return;
-    setIsUploading(true);
-    setUploadProgress('Uploading file to GridFS...');
-
-    const formData = new FormData();
-    formData.append('file', file);
-
-    try {
-      const response = await fetch(`${BASE_URL}/documents/upload?workspace_id=${activeWorkspace}`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${authToken}` },
-        body: formData
-      });
-
-      if (response.ok) {
-        const doc = await response.json();
-        setDocuments(prev => [{ ...doc, id: doc.id || doc._id }, ...prev]);
-        setUploadProgress('Worker parsing & embedding started!');
-        onDocumentChange();
+  // Upload multiple files sequentially, updating progress for each
+  const handleUpload = async (fileOrFiles) => {
+    let files = [];
+    if (Array.isArray(fileOrFiles)) {
+      files = fileOrFiles;
+    } else if (fileOrFiles instanceof FileList) {
+      files = Array.from(fileOrFiles);
+    } else if (fileOrFiles && typeof fileOrFiles === 'object') {
+      if (fileOrFiles.length !== undefined) {
+        files = Array.from(fileOrFiles);
       } else {
-        const err = await response.json();
-        alert(`Upload error: ${err.detail || 'Failed to upload'}`);
+        files = [fileOrFiles];
       }
-    } catch (e) {
-      alert(`Upload failed: ${e.message}`);
-    } finally {
+    }
+    files = files.filter(f => f && f.name);
+    if (files.length === 0 || !activeWorkspace) return;
+
+    setIsUploading(true);
+
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      setUploadProgress(`Uploading ${file.name} (${i + 1}/${files.length})...`);
+
+      const formData = new FormData();
+      formData.append('file', file);
+
+      try {
+        const response = await fetch(`${BASE_URL}/documents/upload?workspace_id=${activeWorkspace}`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${authToken}` },
+          body: formData
+        });
+
+        if (response.ok) {
+          const doc = await response.json();
+          setDocuments(prev => [{ ...doc, id: doc.id || doc._id }, ...prev]);
+          onDocumentChange();
+        } else {
+          const err = await response.json().catch(() => ({}));
+          alert(`Upload error for ${file.name}: ${err.detail || 'Failed to upload'}`);
+        }
+      } catch (e) {
+        alert(`Upload failed for ${file.name}: ${e.message}`);
+      }
+    }
+
+    setUploadProgress('All files uploaded! Worker parsing & embedding started.');
+    setTimeout(() => {
       setIsUploading(false);
       setUploadProgress('');
-    }
+    }, 1500);
   };
 
   const handleDelete = async (docId) => {
@@ -140,7 +161,7 @@ export default function DocumentUpload({
           onDrop={(e) => {
             e.preventDefault();
             setDragOver(false);
-            if (e.dataTransfer.files[0]) handleUpload(e.dataTransfer.files[0]);
+            if (e.dataTransfer.files.length > 0) handleUpload(e.dataTransfer.files);
           }}
           onClick={() => document.getElementById('file-input').click()}
           className={`border-2 border-dashed rounded-2xl p-6 text-center flex flex-col items-center justify-center gap-3 transition-all cursor-pointer ${
@@ -152,8 +173,12 @@ export default function DocumentUpload({
             id="file-input"
             type="file"
             accept=".pdf"
+            multiple
             className="hidden"
-            onChange={(e) => { if (e.target.files[0]) handleUpload(e.target.files[0]); }}
+            onChange={(e) => {
+              if (e.target.files.length > 0) handleUpload(e.target.files);
+              e.target.value = '';
+            }}
           />
           
           {isUploading ? (
@@ -167,8 +192,8 @@ export default function DocumentUpload({
                 <Upload className="w-6 h-6 text-indigo-400" />
               </div>
               <div>
-                <span className="text-xs font-bold block" style={{ color: 'var(--text-primary)' }}>Drop PDF file here</span>
-                <span className="text-[10px] text-slate-500 mt-0.5 block">Up to 50MB per document</span>
+                <span className="text-xs font-bold block" style={{ color: 'var(--text-primary)' }}>Drop PDF files here</span>
+                <span className="text-[10px] text-slate-500 mt-0.5 block">Select single or multiple PDFs (Ctrl+Click in picker)</span>
               </div>
             </>
           )}
@@ -205,9 +230,14 @@ export default function DocumentUpload({
                     <span className="text-xs font-semibold truncate block" style={{ color: 'var(--text-primary)' }}>
                       {doc.filename}
                     </span>
-                    <span className="text-[10px] text-slate-500 block">
+                    <span className={`text-[10px] block ${doc.status === 'FAILED' ? 'text-red-400 font-medium' : 'text-slate-500'}`}>
                       {(doc.size_bytes / 1024).toFixed(1)} KB • {doc.status}
                     </span>
+                    {doc.status === 'FAILED' && doc.error_message && (
+                      <span className="block text-[10px] text-red-400/90 truncate max-w-[190px]" title={doc.error_message}>
+                        {doc.error_message}
+                      </span>
+                    )}
                   </div>
                 </div>
 

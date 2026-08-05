@@ -1,9 +1,14 @@
-# workers/app/chunker.py
+import sys
+from pathlib import Path
+workers_dir = Path(__file__).resolve().parent.parent
+if str(workers_dir) not in sys.path:
+    sys.path.insert(0, str(workers_dir))
+
+import os
 import re
 import numpy as np
 from typing import List, Dict
 import structlog
-from langchain_google_genai import GoogleGenAIEmbeddings
 
 from app.config import settings
 
@@ -61,17 +66,13 @@ async def semantic_chunk_text(text: str, google_api_key: str, similarity_thresho
 
     # 1. Fetch embeddings for all sentences in a single batch
     try:
-        if settings.LLM_PROVIDER == "huggingface":
-            from langchain_community.embeddings import HuggingFaceHubEmbeddings
-            embeddings_model = HuggingFaceHubEmbeddings(
-                repo_id="sentence-transformers/all-MiniLM-L6-v2",
-                huggingfacehub_api_token=settings.HUGGINGFACE_API_KEY
-            )
-        else:
-            embeddings_model = GoogleGenAIEmbeddings(
-                model="models/text-embedding-004", 
-                google_api_key=google_api_key
-            )
+        hf_token = os.environ.get("HUGGINGFACE_API_KEY") or getattr(settings, "HUGGINGFACE_API_KEY", None)
+        from langchain_huggingface import HuggingFaceEndpointEmbeddings
+        embeddings_model = HuggingFaceEndpointEmbeddings(
+            model="sentence-transformers/all-MiniLM-L6-v2",
+            task="feature-extraction",
+            huggingfacehub_api_token=hf_token
+        )
         sentence_texts = [s["text"] for s in sentences]
         # Generate embeddings
         embeddings = await embeddings_model.aembed_documents(sentence_texts)

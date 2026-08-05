@@ -21,8 +21,11 @@ COPY workers/requirements.txt .
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 
-
 # Copy worker codebase
 COPY workers/ /app/
 
-CMD ["python", "app/main.py"]
+# Set PYTHONPATH so `from app.config import settings` resolves correctly
+# Using -m flag runs app.main as a module within the app package
+ENV PYTHONPATH=/app
+CMD ["python", "-m", "app.main"]
+
