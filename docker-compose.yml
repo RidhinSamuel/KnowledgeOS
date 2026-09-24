@@ -91,13 +91,34 @@ services:
     restart: unless-stopped
     environment:
       - VITE_API_TARGET=http://backend:8000
+      # Windows bind mounts don't deliver file-change events; poll instead
+      - VITE_USE_POLLING=true
+    volumes:
+      # Live-mount the source so edits hot-reload (HMR) without a rebuild
+      - ./frontend:/app
+      # Keep the container's Linux node_modules; don't use the host's
+      - frontend_node_modules:/app/node_modules
     ports:
-      - "5173:5173"
+      - "127.0.0.1:5173:5173"
     depends_on:
       - backend
     networks:
       - knowledge-net
 
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: knowledge_nginx
+    restart: unless-stopped
+    volumes:
+      - ./infra/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./infra/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+      - frontend
+    networks:
+      - knowledge-net
 
 
   prometheus:
@@ -130,3 +151,4 @@ volumes:
   mongodb_data:
   valkey_data:
   qdrant_data:
+  frontend_node_modules:

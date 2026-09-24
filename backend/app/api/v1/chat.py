@@ -199,4 +199,9 @@ async def stream_chat_response(
 
         yield "data: [DONE]\n\n"
 
-    return StreamingResponse(sse_event_generator(), media_type="text/event-stream")
+    return StreamingResponse(
+        sse_event_generator(),
+        media_type="text/event-stream",
+        # Tell proxies (nginx, Vite) not to buffer or cache the token stream
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )

@@ -84,21 +84,27 @@ export default function ChatArea({
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
       let accumulatedResponse = '';
+      // Proxies (Vite, nginx) can split a network chunk mid-line, so keep the
+      // trailing partial line and prepend it to the next chunk
+      let buffer = '';
+      let streamDone = false;
 
-      while (true) {
+      while (!streamDone) {
         const { value, done } = await reader.read();
         if (done) break;
 
-        const rawText = decoder.decode(value);
-        // Split chunk into separate SSE event lines
-        const lines = rawText.split('\n');
-        
+        buffer += decoder.decode(value, { stream: true });
+        // Split buffered text into complete SSE event lines
+        const lines = buffer.split('\n');
+        buffer = lines.pop();
+
         for (const line of lines) {
           const cleanLine = line.trim();
           if (!cleanLine.startsWith('data: ')) continue;
-          
+
           const rawData = cleanLine.substring(6);
           if (rawData === '[DONE]') {
+            streamDone = true;
             break;
           }
 
