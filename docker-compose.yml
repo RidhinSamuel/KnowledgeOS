@@ -64,7 +64,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.worker
-    container_name: knowledge_worker
+    # No container_name: replicas need unique names. Each replica joins the
+    # same Redis consumer group, so every upload goes to exactly one worker.
     restart: unless-stopped
     env_file:
       - .env
@@ -77,9 +78,11 @@ services:
       - valkey
       - qdrant
     deploy:
+      # Parallel ingestion: set WORKER_REPLICAS in .env to change the count
+      replicas: ${WORKER_REPLICAS:-3}
       resources:
         limits:
-          memory: 4G
+          memory: 2G
     networks:
       - knowledge-net
 

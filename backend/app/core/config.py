@@ -34,6 +34,10 @@ class Settings(BaseSettings):
     HUGGINGFACE_API_KEY: Optional[str] = None
     LLAMAPARSE_API_KEY: Optional[str] = None
 
+    # Hosted chat models (all inference runs via remote APIs, never locally)
+    HF_CHAT_MODEL: str = "meta-llama/Llama-3.1-8B-Instruct"
+    GEMINI_CHAT_MODEL: str = "gemini-3.8-flash"
+
     # Vector Configurations
     EMBEDDING_MODEL_NAME: str = "all-MiniLM-L6-v2"
     QDRANT_COLLECTION_NAME: str = "knowledge_chunks"

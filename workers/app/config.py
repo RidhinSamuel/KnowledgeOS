@@ -1,5 +1,6 @@
 # workers/app/config.py
 import os
+from pathlib import Path
 from typing import Optional
 from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -14,6 +15,9 @@ class WorkerSettings(BaseSettings):
     HUGGINGFACE_API_KEY: Optional[str] = None
     LLAMAPARSE_API_KEY: Optional[str] = None
     QDRANT_COLLECTION_NAME: str = "knowledge_chunks"
+    # GraphRAG extraction costs one LLM API call per chunk and the chat
+    # pipeline does not read the graph yet, so it is opt-in
+    ENABLE_GRAPH_EXTRACTION: bool = False
     
     @model_validator(mode="after")
     def resolve_docker_vs_localhost(self):
@@ -33,7 +37,15 @@ class WorkerSettings(BaseSettings):
                 self.QDRANT_URL = self.QDRANT_URL.replace("http://qdrant:", "http://localhost:")
         return self
 
-    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+    # Load from repo root .env, workers/.env, or CWD .env
+    model_config = SettingsConfigDict(
+        env_file=(
+            Path(__file__).resolve().parent.parent.parent / ".env",
+            Path(__file__).resolve().parent.parent / ".env",
+            ".env"
+        ),
+        extra="ignore"
+    )
 
 settings = WorkerSettings()
 

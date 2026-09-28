@@ -1,7 +1,7 @@
 # backend/app/models/chat.py
 from datetime import datetime
 from enum import Enum
-from typing import Optional
+from typing import Optional, List
 from pydantic import BaseModel, Field, ConfigDict
 
 class MessageSender(str, Enum):
@@ -17,6 +17,8 @@ class MessageResponse(BaseModel):
     session_id: str
     sender: MessageSender
     content: str
+    # Citations retrieved for an assistant answer (empty for user messages)
+    sources: List[dict] = []
     created_at: datetime
 
 class ChatSessionCreate(BaseModel):

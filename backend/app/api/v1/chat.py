@@ -140,6 +140,7 @@ async def stream_chat_response(
                 "session_id": session_id,
                 "sender": "assistant",
                 "content": content,
+                "sources": sources,
                 "created_at": datetime.now(timezone.utc)
             })
             yield "data: [DONE]\n\n"
@@ -175,14 +176,17 @@ async def stream_chat_response(
                 yield f"data: {json.dumps({'event': 'token', 'data': token})}\n\n"
                 await asyncio.sleep(0.02)
 
-            # 3. Store response in Redis cache for subsequent hits
-            await set_cached_query_response(
-                workspace_id=workspace_id,
-                prompt=user_prompt,
-                content=full_response,
-                sources=sources,
-                redis_client=redis_client
-            )
+            # 3. Store response in Redis cache for subsequent hits. Answers without
+            # sources are skipped: retrieval failed or no documents are indexed yet,
+            # and caching them would hide documents uploaded later.
+            if sources:
+                await set_cached_query_response(
+                    workspace_id=workspace_id,
+                    prompt=user_prompt,
+                    content=full_response,
+                    sources=sources,
+                    redis_client=redis_client
+                )
 
         except Exception as e:
             error_msg = f"LangGraph CRAG Error: {str(e)}"
@@ -194,6 +198,7 @@ async def stream_chat_response(
             "session_id": session_id,
             "sender": "assistant",
             "content": full_response,
+            "sources": sources,
             "created_at": datetime.now(timezone.utc)
         })
 

@@ -42,18 +42,35 @@ async def get_embeddings_model():
 
 
 
-async def get_chat_model():
-    """Dynamically initializes LLM model based on configuration."""
-    if settings.LLM_PROVIDER == "huggingface":
-        from langchain_community.llms import HuggingFaceHub
-        return HuggingFaceHub(
-            repo_id="mistralai/Mistral-7B-Instruct-v0.2",
-            huggingfacehub_api_token=settings.HUGGINGFACE_API_KEY
+class HFChatModel:
+    """
+    Minimal async chat client for Hugging Face Inference Providers.
+    Calls the hosted chat-completions API; no model weights are loaded locally.
+    """
+
+    def __init__(self, model: str, token: str):
+        from huggingface_hub import AsyncInferenceClient
+        self.model = model
+        self.client = AsyncInferenceClient(api_key=token)
+
+    async def ainvoke(self, prompt: str) -> str:
+        response = await self.client.chat_completion(
+            model=self.model,
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=1024,
+            temperature=0.2,
         )
+        return response.choices[0].message.content
+
+
+async def get_chat_model():
+    """Dynamically initializes a hosted LLM client based on configuration."""
+    if settings.LLM_PROVIDER == "huggingface":
+        return HFChatModel(settings.HF_CHAT_MODEL, settings.HUGGINGFACE_API_KEY)
     else:
         from langchain_google_genai import ChatGoogleGenerativeAI
         return ChatGoogleGenerativeAI(
-            model="gemini-1.5-flash",
+            model=settings.GEMINI_CHAT_MODEL,
             google_api_key=settings.GEMINI_API_KEY,
             temperature=0.2
         )
@@ -68,16 +85,20 @@ async def vector_search_node(state: CRAGState, qdrant: AsyncQdrantClient) -> Dic
         embeddings_model = await get_embeddings_model()
         query_vector = await embeddings_model.aembed_query(query)
         
-        search_results = await qdrant.search(
+        # query_points replaces the search() method removed in newer qdrant-client
+        response = await qdrant.query_points(
             collection_name=settings.QDRANT_COLLECTION_NAME,
-            query_vector=query_vector,
+            query=query_vector,
             query_filter=Filter(
                 must=[FieldCondition(key="workspace_id", match=MatchValue(value=workspace_id))]
             ),
-            limit=5
+            limit=5,
+            with_payload=True
         )
+        search_results = response.points
     except Exception as e:
-        logger.error(f"vector_search_failed: {str(e)}")
+        # repr keeps the exception type visible (e.g. TimeoutError has an empty str)
+        logger.error(f"vector_search_failed: {e!r}")
         search_results = []
 
     retrieved_context = ""
@@ -96,6 +117,15 @@ async def vector_search_node(state: CRAGState, qdrant: AsyncQdrantClient) -> Dic
         retrieved_context += f"--- Source: {filename} (Page {page}) ---\n{text}\n\n"
 
     avg_score = (sum(scores) / len(scores)) if scores else 0.0
+
+    # Several chunks often come from the same page; cite each page once with
+    # its best score. The LLM context above still includes every chunk.
+    best_by_page: Dict[tuple, Dict[str, Any]] = {}
+    for src in sources:
+        key = (src["filename"], src["page"])
+        if key not in best_by_page or src["score"] > best_by_page[key]["score"]:
+            best_by_page[key] = src
+    sources = sorted(best_by_page.values(), key=lambda s: s["score"], reverse=True)
 
     return {
         "search_results": sources,
@@ -145,20 +175,19 @@ async def generate_answer_node(state: CRAGState) -> Dict[str, Any]:
     prompt = state["prompt"]
     context = state.get("final_context", "")
     
-    try:
-        llm = await get_chat_model()
-        system_prompt = (
-            "You are KnowledgeOS, an AI enterprise search assistant.\n"
-            "Answer the question based strictly on the document context below.\n"
-            "Cite source filenames and page numbers for facts.\n"
-            "If the context does not contain the answer, state that clearly.\n\n"
-            f"--- Context ---\n{context if context else 'No document context found.'}\n\n"
-            f"User Question: {prompt}"
-        )
-        result = await llm.ainvoke(system_prompt)
-        answer = result.content if hasattr(result, "content") else str(result)
-    except Exception as e:
-        answer = f"Error generating answer: {str(e)}"
+    # Errors propagate to the caller so they surface as an SSE error event
+    # instead of being returned (and cached) as if they were a real answer
+    llm = await get_chat_model()
+    system_prompt = (
+        "You are KnowledgeOS, an AI enterprise search assistant.\n"
+        "Answer the question based strictly on the document context below.\n"
+        "Cite source filenames and page numbers for facts.\n"
+        "If the context does not contain the answer, state that clearly.\n\n"
+        f"--- Context ---\n{context if context else 'No document context found.'}\n\n"
+        f"User Question: {prompt}"
+    )
+    result = await llm.ainvoke(system_prompt)
+    answer = result.content if hasattr(result, "content") else str(result)
 
     return {"response_content": answer}
 

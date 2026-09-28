@@ -56,7 +56,7 @@ async def index_chunks_to_qdrant(
     # ── GraphRAG: Extract entities + relations and store in MongoDB ────────────
     # Runs after Qdrant upsert succeeds. Failures here are non-blocking:
     # ingestion is already complete; graph just won't be available for this chunk.
-    if settings.GEMINI_API_KEY:
+    if settings.ENABLE_GRAPH_EXTRACTION and settings.GEMINI_API_KEY:
         logger.info("starting_graph_extraction", chunk_count=len(chunks))
         for chunk, point in zip(chunks, points):
             await extract_and_store_graph(
@@ -69,4 +69,4 @@ async def index_chunks_to_qdrant(
             )
         logger.info("graph_extraction_complete", document_id=document_id)
     else:
-        logger.warn("graph_extraction_skipped_no_gemini_key")
+        logger.info("graph_extraction_skipped")
