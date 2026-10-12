@@ -11,3 +11,4 @@ structlog>=24.3.0
 nest-asyncio>=1.6.0
 pydantic-settings>=2.0.0
 huggingface_hub>=0.20.0
+langchain-huggingface>=0.1.0
